@@ -1,0 +1,31 @@
+{
+  "name": "pr-bot-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "babel-node index.js",
+    "watch": "nodemon --exec 'npm start'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oroce/pr-bot-test.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/oroce/pr-bot-test/issues"
+  },
+  "homepage": "https://github.com/oroce/pr-bot-test#readme",
+  "dependencies": {
+    "babel": "^5.8.23",
+    "debug": "^2.2.0",
+    "dotenv": "^1.2.0",
+    "github": "^0.2.4",
+    "pull-request": "^3.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.7.3"
+  }
+}
