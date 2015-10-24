@@ -6,7 +6,7 @@ import series from 'run-series';
 const debug = debugFactory('pull-request-bot');
 const user = 'oroce';
 const repo = 'pr-bot-test';
-
+const badge = `[![Build Status](https://travis-ci.org/${user}/${repo}.svg)](https://travis-ci.org/${user}/${repo})`;
 const github = new Github({
   version: '3.0.0',
   headers: {
@@ -80,14 +80,28 @@ function updateReadme() {
   }, function(err, result) {
     if (err) {
       if (err.code === 404) {
-        return createNewReadme();
+        return readme();
       }
       return console.error(err);
     }
-    console.log(err, result);
+    // check if it contains the badge
+    // if not readme()
+    // else return
+    var content = new Buffer(result.content, 'base64').toString();
+    console.log(err, result, content);
+    if (content.indexOf(badge) > -1) {
+      console.log('you already all the badge magic:)');
+      return;
+    }
+    readme({
+      content: new Buffer(badge + '\n' + content).toString('base64'),
+      sha: result.sha,
+      path: result.path
+    });
+
   });
 }
-function createNewReadme() {
+function readme(current) {
   debug('creating new readme');
   github.gitdata.getReference({
     user: user,
@@ -99,7 +113,7 @@ function createNewReadme() {
     }
 
     const sha = result.object.sha;
-    const branch = 'bot-badge';
+    const branch = 'bot-badge-append';
     debug('creating new branch %s based on %s', branch, sha);
 
     github.gitdata.createReference({
@@ -113,26 +127,42 @@ function createNewReadme() {
       }
 
       const path = 'README.md';
-      const badge = '[![Build Status](https://travis-ci.org/oroce/pr-bot-test.svg)](https://travis-ci.org/oroce/pr-bot-test)';
-      const content = `
-${repo}
+      const content = `${repo}
 ===
 
 ${badge}`;
+      // if current is not null we should update that
 
-      debug('creating %s in %s', path, branch);
-      github.repos.createFile({
-        branch,
-        user,
-        repo,
-        path,
-        content: new Buffer(content).toString('base64'),
-        message: 'README.md created',
-        committer: {
-          name: 'Pull Request bot',
-          email: 'prbot@oroszi.net'
-        }
-      }, function(err, result) {
+      const committer = {
+        name: 'Pull Request bot',
+        email: 'prbot@oroszi.net'
+      };
+      if (current) {
+        debug('updating %s in %s', current.path, branch)
+        github.repos.updateFile({
+          branch,
+          user,
+          repo,
+          path: current.path,
+          message: 'README updated',
+          content: current.content,
+          sha: current.sha,
+          committer
+        }, next);
+      } else {
+        debug('creating %s in %s', path, branch);
+        github.repos.createFile({
+          branch,
+          user,
+          repo,
+          path,
+          content: new Buffer(content).toString('base64'),
+          message: 'README.md created',
+          committer
+        }, next);
+      }
+
+      function next(err, result) {
         if (err) {
           return console.error(err);
         }
@@ -160,7 +190,7 @@ I just added a status badge to your README.`,
             console.log('Pr is available at: %s', result.html_url);
           });
         });
-      });
+      }
     });
   });
 }
